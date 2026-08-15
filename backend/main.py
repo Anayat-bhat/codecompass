@@ -1,17 +1,112 @@
-from fastapi import FastAPI
+import os
+from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
+from dotenv import load_dotenv
 
-app = FastAPI(title="CodeCompass API")
+from services.github_service import fetch_repository_files, parse_github_url
+from services.chunker import chunk_repository_documents
+from services.vector_db import store_chunks_in_vector_db, query_vector_db
 
-# Configure CORS so our React frontend can communicate with this backend
+# Load environment variables from .env file
+load_dotenv()
+
+app = FastAPI(
+    title="CodeCompass API",
+    description="Code-aware RAG intelligence assistant for GitHub repositories",
+    version="1.0.0"
+)
+
+# Configure CORS for React frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Vite default port
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-@app.get("/health")
+class IngestRequest(BaseModel):
+    repo_url: str = Field(
+        ...,
+        description="Public GitHub repository URL (e.g. https://github.com/fastapi/fastapi)",
+        example="https://github.com/fastapi/fastapi"
+    )
+
+class SearchRequest(BaseModel):
+    query: str = Field(..., description="Search query string")
+    top_k: int = Field(default=5, description="Number of vector results to return")
+
+@app.get("/health", status_code=status.HTTP_200_OK)
 def health_check():
-    return {"status": "ok", "message": "CodeCompass API is running"}
+    """Health check endpoint to verify backend server status."""
+    return {"status": "ok", "message": "CodeCompass API is operational"}
+
+@app.post("/api/ingest", status_code=status.HTTP_200_OK)
+def ingest_repository(request: IngestRequest):
+    """
+    Ingests a public GitHub repository:
+    1. Validates repository URL.
+    2. Retrieves source files via GitHub REST API.
+    3. Splits source code into AST-aware chunks.
+    4. Generates embeddings and indexes chunks in Chroma Vector DB.
+    """
+    try:
+        owner, repo = parse_github_url(request.repo_url)
+    except ValueError as err:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(err))
+
+    try:
+        # Step 1: Fetch files from GitHub
+        documents = fetch_repository_files(request.repo_url, max_files=150)
+        if not documents:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"No supported source code files found in repository '{owner}/{repo}'."
+            )
+
+        # Step 2: AST Code-Aware Chunking
+        chunks = chunk_repository_documents(documents)
+
+        # Step 3: Vector DB Storage & Embeddings
+        vector_res = store_chunks_in_vector_db(chunks)
+
+        # Extract simplified file listing for tree view
+        file_tree = [{"path": doc["path"], "language": doc["language"]} for doc in documents]
+
+        return {
+            "status": "success",
+            "repo_url": request.repo_url,
+            "owner": owner,
+            "repo": repo,
+            "file_count": len(documents),
+            "chunk_count": len(chunks),
+            "files": file_tree,
+            "vector_db": vector_res
+        }
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ingestion failed: {str(e)}"
+        )
+
+@app.post("/api/search", status_code=status.HTTP_200_OK)
+def search_code_chunks(request: SearchRequest):
+    """
+    Performs semantic vector search against indexed code chunks.
+    """
+    try:
+        results = query_vector_db(request.query, n_results=request.top_k)
+        return {
+            "status": "success",
+            "query": request.query,
+            "count": len(results),
+            "results": results
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Vector search failed: {str(e)}"
+        )

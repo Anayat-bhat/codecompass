@@ -1,83 +1,97 @@
 # API Design: CodeCompass
 
-This document outlines the REST API endpoints required for the FastAPI backend.
+This document outlines the REST API endpoints provided by the FastAPI backend.
 
 ---
 
 ## 1. Health Check
-**Purpose:** Verify the backend is running and accessible (used by frontend to show connection status).
+**Purpose:** Verify the backend is running and accessible.
 - **Endpoint:** `GET /health`
 - **Request:** None
 - **Response (200 OK):**
   ```json
   {
     "status": "ok",
-    "message": "CodeCompass API is running"
+    "message": "CodeCompass API is operational"
   }
   ```
 
 ---
 
 ## 2. Ingest Repository
-**Purpose:** Fetch a GitHub repository, chunk its code, store vectors, and generate the Onboarding Brief and File Tree.
+**Purpose:** Fetch a public GitHub repository, perform code-aware AST chunking, and index vectors in Chroma DB.
 - **Endpoint:** `POST /api/ingest`
 - **Request Body:**
   ```json
   {
-    "repo_url": "https://github.com/username/repository"
+    "repo_url": "https://github.com/octocat/Spoon-Knife"
   }
   ```
 - **Validation:** 
-  - `repo_url` must be a valid GitHub URL.
-  - Repository must be public.
-  - Repository must contain fewer than 200 supported files (Python/JS/TS).
+  - `repo_url` must be a valid public GitHub URL.
+  - Limits fetching to supported source file extensions (`.py`, `.js`, `.ts`, `.jsx`, `.tsx`, `.html`, `.css`, `.json`, `.md`).
+  - Ignores binary files, lockfiles, and `node_modules` / `venv` directories.
 - **Response (200 OK):**
   ```json
   {
-    "repo_url": "https://github.com/username/repository",
-    "file_tree": {
-      "src": {
-        "main.py": "file",
-        "utils": {
-          "helpers.py": "file"
-        }
-      }
-    },
-    "onboarding_brief": "# Architecture Overview\nThis project is a..."
+    "status": "success",
+    "repo_url": "https://github.com/octocat/Spoon-Knife",
+    "owner": "octocat",
+    "repo": "Spoon-Knife",
+    "file_count": 3,
+    "chunk_count": 3,
+    "files": [
+      { "path": "README.md", "language": "markdown" },
+      { "path": "index.html", "language": "html" },
+      { "path": "styles.css", "language": "css" }
+    ],
+    "vector_db": {
+      "status": "success",
+      "count": 3,
+      "collection": "codecompass_chunks",
+      "message": "Successfully indexed 3 chunks into vector database."
+    }
   }
   ```
 - **Error Cases:**
-  - `400 Bad Request`: Invalid URL format.
+  - `400 Bad Request`: Invalid GitHub URL or no supported source code files found.
   - `404 Not Found`: Repository does not exist or is private.
-  - `413 Payload Too Large`: Repository exceeds the 200-file limit.
+  - `500 Internal Server Error`: Ingestion processing error.
 
 ---
 
-## 3. Chat (Streaming)
-**Purpose:** Handle user Q&A grounded in the ingested codebase. Streams the response back to the client.
-- **Endpoint:** `POST /api/chat`
+## 3. Semantic Vector Search
+**Purpose:** Query the vector database for relevant code chunks based on semantic similarity.
+- **Endpoint:** `POST /api/search`
 - **Request Body:**
   ```json
   {
-    "repo_url": "https://github.com/username/repository",
-    "query": "Where is the authentication middleware located?",
-    "history": [
-      {"role": "user", "content": "What does this repo do?"},
-      {"role": "assistant", "content": "It is a web framework..."}
+    "query": "Where is the authentication handled?",
+    "top_k": 5
+  }
+  ```
+- **Response (200 OK):**
+  ```json
+  {
+    "status": "success",
+    "query": "Where is the authentication handled?",
+    "count": 5,
+    "results": [
+      {
+        "content": "def authenticate_user(...):",
+        "metadata": {
+          "file_path": "auth.py",
+          "language": "python",
+          "chunk_index": 0
+        },
+        "score": 0.245
+      }
     ]
   }
   ```
-- **Validation:** 
-  - `repo_url` must exist in the vector database.
-  - `query` cannot be empty.
-- **Response (200 OK - text/event-stream):**
-  Server-Sent Events (SSE) streaming the markdown response word-by-word.
-  ```text
-  data: {"chunk": "The "}
-  data: {"chunk": "authentication "}
-  data: {"chunk": "middleware "}
-  ...
-  ```
-- **Error Cases:**
-  - `400 Bad Request`: Repository has not been ingested yet.
-  - `500 Internal Server Error`: OpenAI API failure.
+
+---
+
+## 4. Chat (Scheduled for Day 6)
+**Purpose:** Handle grounded user Q&A streaming response grounded in indexed code.
+- **Endpoint:** `POST /api/chat`
