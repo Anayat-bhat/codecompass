@@ -2,13 +2,13 @@ import uuid
 from typing import List, Dict, Any
 from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
 
-# Map language strings to LangChain's Language enum
+# Map normalized language identifiers to LangChain's Language enum
 LANGUAGE_MAP: Dict[str, Language] = {
     "python": Language.PYTHON,
     "js": Language.JS,
     "ts": Language.TS,
     "html": Language.HTML,
-    "css": Language.HTML,  # Uses CSS/HTML block structures
+    "css": Language.HTML,
     "cpp": Language.CPP,
     "go": Language.GO,
     "java": Language.JAVA,
@@ -42,7 +42,7 @@ def chunk_file(doc: Dict[str, Any], chunk_size: int = 1000, chunk_overlap: int =
     language = doc.get("language", "text")
     repo = doc.get("repo", "unknown")
 
-    if not content.strip():
+    if not content or not content.strip():
         return []
 
     splitter = create_code_splitter(language, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
@@ -51,7 +51,9 @@ def chunk_file(doc: Dict[str, Any], chunk_size: int = 1000, chunk_overlap: int =
     chunks = []
     for idx, text in enumerate(text_chunks):
         # Generate a unique deterministic ID for the vector DB chunk
-        chunk_id = f"{repo}_{file_path}_{idx}".replace("/", "_").replace(".", "_")
+        safe_path = file_path.replace("/", "_").replace(".", "_").replace("\\", "_")
+        safe_repo = repo.replace("/", "_").replace(".", "_")
+        chunk_id = f"{safe_repo}_{safe_path}_{idx}"
         
         chunks.append({
             "id": chunk_id,

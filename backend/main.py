@@ -17,10 +17,10 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS for React frontend
+# Configure CORS for React frontend (Development + Deployed Vercel URLs)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=["*"],  # Permits local dev & deployed Vercel apps
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -49,7 +49,7 @@ def ingest_repository(request: IngestRequest):
     1. Validates repository URL.
     2. Retrieves source files via GitHub REST API.
     3. Splits source code into AST-aware chunks.
-    4. Generates embeddings and indexes chunks in Chroma Vector DB.
+    4. Generates vector embeddings and indexes chunks in vector database.
     """
     try:
         owner, repo = parse_github_url(request.repo_url)
