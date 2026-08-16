@@ -1,86 +1,71 @@
-# UI & User Flow: CodeCompass
+# UI Wireframes & User Journey: CodeCompass
 
-## 1. User Journey
-1. **Landing:** User arrives at the CodeCompass web app. They see a clean, premium landing screen with a single input bar.
-2. **Action:** User pastes a public GitHub URL and hits Enter.
-3. **Loading:** A sleek loading state appears, detailing the steps (Fetching files -> Chunking code -> Generating brief).
-4. **Dashboard:** The main interface loads.
-   - **Left Panel:** Displays the visual, expandable file tree.
-   - **Right Panel (Tabs):** Defaults to the "Onboarding Brief" tab, showing the AI-generated architecture summary.
-5. **Interaction:** User clicks the "Chat" tab and asks a specific question.
-6. **Result:** The AI streams the answer, citing specific files which the user can visually cross-reference in the file tree on the left.
+This document describes the screen flows, wireframes, and user experience for CodeCompass.
 
-## 2. Screen Flow & Wireframes
+---
 
-### Screen 1: Home (Landing)
+## 1. User Journey Flow
+
+1. **Landing Page:** User enters CodeCompass. They see a clean hero interface with a GitHub URL input bar.
+2. **Ingestion Trigger:** User enters a GitHub URL (e.g. `https://github.com/fastapi/fastapi`) and clicks **Analyze**.
+3. **Loading Progress:** Real-time feedback shows processing progress:
+   - `[1/3]` Fetching repository tree via GitHub API...
+   - `[2/3]` Parsing AST-aware code chunks...
+   - `[3/3]` Indexing vectors into ChromaDB...
+4. **Dashboard Layout:**
+   - **Left Panel:** Interactive, collapsible repository file tree component.
+   - **Right Panel (Tabs):**
+     - **Onboarding Brief:** Auto-generated repository architecture summary.
+     - **Code Chat:** Q&A interface with source citations.
+
+---
+
+## 2. Screen Layout Wireframes
+
+### Screen 1: Home & Connection Indicator
 ```text
-+---------------------------------------------------------+
-|  [Logo] CodeCompass                                     |
-|                                                         |
-|                                                         |
-|             Navigate Any Codebase, Instantly.           |
-|             Paste a GitHub URL to get started.          |
-|                                                         |
-|      [ https://github.com/user/repo............. ]      |
-|                        [ Analyze ]                      |
-|                                                         |
-+---------------------------------------------------------+
++-------------------------------------------------------------+
+| 🧭 CodeCompass                      Backend: Connected ✅  |
++-------------------------------------------------------------+
+|                                                             |
+|               Navigate Any Codebase, Instantly.             |
+|                                                             |
+|    [ https://github.com/owner/repository................ ]  |
+|                       [ Analyze Repo ]                      |
+|                                                             |
++-------------------------------------------------------------+
 ```
-*Purpose:* Zero-friction entry point. Focus entirely on the core action.
 
-### Screen 2: Loading State
+### Screen 2: Dashboard (File Explorer + Chat/Brief)
 ```text
-+---------------------------------------------------------+
-|                                                         |
-|                     Analyzing Repo...                   |
-|                                                         |
-|                  [=================   ]                 |
-|                                                         |
-|             ✓ Fetching repository tree...               |
-|             ✓ Filtering valid source files...           |
-|             ⟳ Chunking and generating embeddings...     |
-|                                                         |
-+---------------------------------------------------------+
++-------------------------------------------------------------+
+| 🧭 CodeCompass | Repo: fastapi/fastapi             [ New ]  |
++----------------------+--------------------------------------+
+| FILE EXPLORER        | [ Onboarding Brief ]  [ Code Chat ]  |
+|                      |                                      |
+| 📁 fastapi           | # FastAPI Overview                   |
+|   📄 applications.py | FastAPI is a modern Python web...    |
+|   📄 routing.py      |                                      |
+|   📁 middleware      | ## Key Components                    |
+|     📄 cors.py       | - Applications (`applications.py`)   |
+| 📄 README.md         | - Router (`routing.py`)              |
+| 📄 requirements.txt  |                                      |
++----------------------+--------------------------------------+
 ```
-*Purpose:* Manage expectations. Ingesting a repo takes 10-30 seconds. Detailed loading steps prevent the user from leaving.
 
-### Screen 3: Main Dashboard
+### Screen 3: Semantic Code Chat
 ```text
-+---------------------------------------------------------+
-| [Logo] CodeCompass | Repo: user/repo           [New]    |
-+--------------------+------------------------------------+
-| FILE EXPLORER      | [ Onboarding Brief ] [ Chat ]      |
-|                    |                                    |
-| 📁 src             | # Architecture Overview            |
-|   📄 main.py       | This repository is a FastAPI       |
-|   📁 utils         | web service that...                |
-|     📄 helpers.py  |                                    |
-| 📁 tests           | # Setup Instructions               |
-|   📄 test_main.py  | 1. pip install -r requirements.txt |
-| 📄 README.md       | 2. uvicorn main:app --reload       |
-| 📄 requirements.txt|                                    |
-|                    |                                    |
-|                    |                                    |
-+--------------------+------------------------------------+
++----------------------+--------------------------------------+
+| FILE EXPLORER        | [ Onboarding Brief ]  [ Code Chat ]  |
+|                      |                                      |
+| 📁 fastapi           | [User]: Where is CORS defined?       |
+|   ...                |                                      |
+|                      | [AI]: CORS middleware is configured   |
+|                      | inside `fastapi/middleware/cors.py`  |
+|                      | (Lines 15-42).                       |
+|                      |                                      |
+|                      | +----------------------------------+ |
+|                      | | Ask a question about the code... | |
+|                      | +----------------------------------+ |
++----------------------+--------------------------------------+
 ```
-*Purpose:* Provide complete context. The user has the macro view (File Tree) and the micro view (Brief/Chat) side-by-side.
-
-### Screen 4: Chat Interface (Right Panel)
-```text
-+--------------------+------------------------------------+
-| FILE EXPLORER      | [ Onboarding Brief ] [ Chat ]      |
-|                    |                                    |
-| 📁 src             |                                    |
-|   📄 main.py       | [User]: How does authentication    |
-| ...                |         work here?                 |
-|                    |                                    |
-|                    | [AI]: Authentication is handled    |
-|                    | via JWT tokens in the middleware.  |
-|                    | You can see the logic inside       |
-|                    | `src/utils/auth.py` (Lines 12-45). |
-|                    |                                    |
-|                    | ---------------------------------- |
-|                    | [ Ask a question about the code..] |
-+--------------------+------------------------------------+
-```
-*Purpose:* Natural language interaction with clear citations to the file tree.

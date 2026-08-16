@@ -1,25 +1,35 @@
 # Environment Variables: CodeCompass
 
-CodeCompass relies on several external APIs for repository ingestion, vector storage, and AI generation. 
+This document describes the environment variable setup for local development and cloud production.
 
-## Backend `.env` File
-Create a file named `.env` in the `backend/` directory. **Never commit this file to version control.**
+---
+
+## Backend Environment Configuration (`backend/.env`)
+
+Create a `.env` file in the `backend/` directory.
 
 ```env
-# GitHub PAT for fetching repositories without strict rate limits
-GITHUB_TOKEN=your_github_personal_access_token_here
+# Optional GitHub Personal Access Token (prevents rate limits on public repos)
+GITHUB_TOKEN=your_github_token_here
 
-# OpenAI API Key for embeddings and GPT-4o-mini generation
+# Optional OpenAI API Key (if provided, switches vector embeddings to text-embedding-3-small)
 OPENAI_API_KEY=your_openai_api_key_here
-
-# Pinecone API Key for Vector Database
-PINECONE_API_KEY=your_pinecone_api_key_here
-PINECONE_INDEX_NAME=codecompass-index
 ```
 
-## How to get these keys:
-1. **GITHUB_TOKEN:** Go to GitHub -> Settings -> Developer Settings -> Personal Access Tokens (Classic) -> Generate new token (check `repo` scope).
-2. **OPENAI_API_KEY:** Go to platform.openai.com -> API Keys -> Create new secret key.
-3. **PINECONE_API_KEY:** Go to pinecone.io -> Create a free account -> API Keys. 
+---
 
-*Note: We will configure these keys in tomorrow's session when we build the GitHub Ingestion Service.*
+## 🔑 Key Details
+
+1. **GITHUB_TOKEN (Optional):**
+   - Public repository fetching works out-of-the-box without a token.
+   - Adding a PAT increases GitHub API rate limit from 60 requests/hour to 5,000 requests/hour.
+   - *How to generate:* GitHub -> Settings -> Developer Settings -> Personal Access Tokens (Classic).
+
+2. **OPENAI_API_KEY (Optional):**
+   - By default, CodeCompass uses a **100% free local ONNX embedding model** (`all-MiniLM-L6-v2`) built into ChromaDB.
+   - No paid API key is required to run CodeCompass!
+
+---
+
+## Security Warning
+- **Never** commit `.env` files to git repositories. `.env` is listed in `.gitignore`.

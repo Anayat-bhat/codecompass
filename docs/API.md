@@ -1,13 +1,13 @@
-# API Design: CodeCompass
+# API Specifications: CodeCompass
 
-This document outlines the REST API endpoints provided by the FastAPI backend.
+This document details the REST API endpoints exposed by the FastAPI backend server (`http://localhost:8000`).
 
 ---
 
 ## 1. Health Check
-**Purpose:** Verify the backend is running and accessible.
+**Purpose:** Verify backend server status and CORS configuration.
 - **Endpoint:** `GET /health`
-- **Request:** None
+- **Request Parameters:** None
 - **Response (200 OK):**
   ```json
   {
@@ -19,54 +19,51 @@ This document outlines the REST API endpoints provided by the FastAPI backend.
 ---
 
 ## 2. Ingest Repository
-**Purpose:** Fetch a public GitHub repository, perform code-aware AST chunking, and index vectors in Chroma DB.
+**Purpose:** Ingests a public GitHub repository, fetches target source code files, splits code into AST-aware chunks, and indexes embeddings in ChromaDB.
 - **Endpoint:** `POST /api/ingest`
+- **Headers:** `Content-Type: application/json`
 - **Request Body:**
   ```json
   {
-    "repo_url": "https://github.com/octocat/Spoon-Knife"
+    "repo_url": "https://github.com/fastapi/fastapi"
   }
   ```
-- **Validation:** 
+- **Validation Rules:**
   - `repo_url` must be a valid public GitHub URL.
-  - Limits fetching to supported source file extensions (`.py`, `.js`, `.ts`, `.jsx`, `.tsx`, `.html`, `.css`, `.json`, `.md`).
-  - Ignores binary files, lockfiles, and `node_modules` / `venv` directories.
+  - Limits file fetching to target source extensions (`.py`, `.js`, `.ts`, `.jsx`, `.tsx`, `.html`, `.css`, `.json`, `.md`).
+  - Automatically filters out binary files, lockfiles, `.git`, `node_modules`, and `venv`.
 - **Response (200 OK):**
   ```json
   {
     "status": "success",
-    "repo_url": "https://github.com/octocat/Spoon-Knife",
-    "owner": "octocat",
-    "repo": "Spoon-Knife",
-    "file_count": 3,
-    "chunk_count": 3,
+    "repo_url": "https://github.com/fastapi/fastapi",
+    "owner": "fastapi",
+    "repo": "fastapi",
+    "file_count": 45,
+    "chunk_count": 120,
     "files": [
-      { "path": "README.md", "language": "markdown" },
-      { "path": "index.html", "language": "html" },
-      { "path": "styles.css", "language": "css" }
+      { "path": "fastapi/applications.py", "language": "python" },
+      { "path": "fastapi/routing.py", "language": "python" }
     ],
     "vector_db": {
       "status": "success",
-      "count": 3,
+      "count": 120,
       "collection": "codecompass_chunks",
-      "message": "Successfully indexed 3 chunks into vector database."
+      "message": "Successfully indexed 120 chunks into vector database."
     }
   }
   ```
-- **Error Cases:**
-  - `400 Bad Request`: Invalid GitHub URL or no supported source code files found.
-  - `404 Not Found`: Repository does not exist or is private.
-  - `500 Internal Server Error`: Ingestion processing error.
 
 ---
 
 ## 3. Semantic Vector Search
-**Purpose:** Query the vector database for relevant code chunks based on semantic similarity.
+**Purpose:** Performs semantic vector search against indexed code chunks using cosine distance matching.
 - **Endpoint:** `POST /api/search`
+- **Headers:** `Content-Type: application/json`
 - **Request Body:**
   ```json
   {
-    "query": "Where is the authentication handled?",
+    "query": "Where is CORS middleware configured?",
     "top_k": 5
   }
   ```
@@ -74,17 +71,20 @@ This document outlines the REST API endpoints provided by the FastAPI backend.
   ```json
   {
     "status": "success",
-    "query": "Where is the authentication handled?",
+    "query": "Where is CORS middleware configured?",
     "count": 5,
     "results": [
       {
-        "content": "def authenticate_user(...):",
+        "content": "app.add_middleware(CORSMiddleware, allow_origins=['*'])",
         "metadata": {
-          "file_path": "auth.py",
+          "file_path": "backend/main.py",
           "language": "python",
-          "chunk_index": 0
+          "repo": "owner/repo",
+          "chunk_index": 0,
+          "total_chunks": 3,
+          "char_length": 145
         },
-        "score": 0.245
+        "score": 0.1852
       }
     ]
   }
@@ -92,6 +92,7 @@ This document outlines the REST API endpoints provided by the FastAPI backend.
 
 ---
 
-## 4. Chat (Scheduled for Day 6)
-**Purpose:** Handle grounded user Q&A streaming response grounded in indexed code.
+## 4. Chat Endpoint (Scheduled for Day 6)
+**Purpose:** Handles natural language RAG retrieval and streams grounded AI responses with exact file citations.
 - **Endpoint:** `POST /api/chat`
+- **Payload:** `{ "query": "string", "session_id": "string" }`

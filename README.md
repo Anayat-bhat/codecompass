@@ -2,7 +2,7 @@
 
 > Code-Aware RAG Intelligence & Interactive Repository Onboarding Assistant
 
-CodeCompass is an AI-powered developer onboarding platform that ingests public GitHub repositories, performs AST code-aware chunking, generates vector embeddings for semantic code search, and generates contextual answers to codebase questions.
+CodeCompass is an AI-powered developer onboarding platform that ingests public GitHub repositories, performs AST code-aware chunking, generates vector embeddings for semantic code search, and provides contextual answers to codebase questions with exact file citations.
 
 ---
 
@@ -10,31 +10,35 @@ CodeCompass is an AI-powered developer onboarding platform that ingests public G
 
 - [x] **Day 1:** Idea Validation & Pitch Deck
 - [x] **Day 2:** System Architecture & Tech Stack Selection
-- [x] **Day 3:** Monorepo Setup & Frontend/Backend Health Check
-- [x] **Day 4:** GitHub Repository Ingestion Service
-- [x] **Day 5:** Code-Aware AST Chunking, Free Vector DB Integration & Early Deployment Setup
-- [ ] **Day 6:** RAG Retrieval & Chat Backend
-- [ ] **Day 7:** Interactive Frontend UI (Chat & File Tree)
+- [x] **Day 3:** Monorepo Setup & Frontend/Backend Health Check (`/health`)
+- [x] **Day 4:** GitHub Repository Ingestion Service (`POST /api/ingest`)
+- [x] **Day 5:** Code-Aware AST Chunking, Free ChromaDB Vector Integration & Early Deployment Setup
+- [ ] **Day 6:** RAG Retrieval & Chat Backend (`POST /api/chat`)
+- [ ] **Day 7:** Interactive Frontend UI (Chat & File Tree Component)
 - [ ] **Day 8:** Auto-Generated Repository Onboarding Brief
 - [ ] **Day 9:** End-to-End Refinement & Response Streaming
 - [ ] **Day 10:** Production QA & Pitch Demo
 
 ---
 
-## 🚀 Day 5 Highlights
+## 🚀 Key Features Built (Day 1 - Day 5)
 
-1. **AST Code-Aware Chunking:**
-   - Intelligent language-specific code splitting for Python, JavaScript, TypeScript, HTML, CSS, and Markdown using LangChain text splitters.
-   - Attaches metadata (file path, repo, language, chunk index) to preserve structural context.
+1. **GitHub Ingestion Engine (`services/github_service.py`):**
+   - Parses public repository URLs, fetches file trees recursively, and filters for relevant source files (`.py`, `.js`, `.ts`, `.jsx`, `.tsx`, `.html`, `.css`, `.json`, `.md`).
+   - Ignores binary files, lockfiles, and `node_modules` / `venv` directories.
 
-2. **Vector DB & Free Embeddings:**
-   - 100% free vector indexing powered by ChromaDB with built-in ONNX embeddings (`all-MiniLM-L6-v2`).
-   - Supports `/api/ingest` for full repo processing and `/api/search` for semantic code retrieval.
-   - Zero-cost architecture requiring no paid API keys.
+2. **AST Code-Aware Chunking Engine (`services/chunker.py`):**
+   - Uses LangChain AST splitters for Python, JavaScript, TypeScript, HTML, CSS, and Markdown to preserve function, class, and logic boundaries.
+   - Enriches each chunk with metadata (`file_path`, `language`, `repo`, `chunk_index`, `total_chunks`, `char_length`).
 
-3. **Early Deployment Preparedness:**
-   - Configured `Procfile` and `render.yaml` for free backend deployment on Render.
-   - Configured `vercel.json` for free frontend SPA hosting on Vercel.
+3. **Persistent Vector Store & Free Local Embeddings (`services/vector_db.py`):**
+   - Persistent **ChromaDB** vector database instance (`backend/chroma_db`).
+   - 100% free vector embedding execution via local ONNX model (`all-MiniLM-L6-v2`), with zero required API keys.
+   - Supports `/api/ingest` for batch indexing and `/api/search` for semantic similarity retrieval.
+
+4. **Production Cloud Deployment Specs:**
+   - Pre-configured `Procfile` & `render.yaml` for free backend deployment on **Render**.
+   - Pre-configured `vercel.json` for single-page app deployment on **Vercel**.
 
 ---
 
@@ -42,44 +46,61 @@ CodeCompass is an AI-powered developer onboarding platform that ingests public G
 
 ```text
 codecompass/
-├── backend/
-│   ├── main.py                  # FastAPI Application & REST Endpoints
-│   ├── Procfile                 # Production Process definition
-│   ├── render.yaml              # Render Cloud Deployment Spec
-│   ├── requirements.txt         # Python Dependencies
-│   ├── test_chunker.py          # Chunker Unit Test Script
-│   ├── test_vector_db.py        # Vector DB Unit Test Script
+├── docs/                        # Complete technical documentation suite
+│   ├── API.md                   # REST API specifications
+│   ├── ARCHITECTURE.md          # System architecture and data flow
+│   ├── ENVIRONMENT.md           # Configuration & environment variables
+│   ├── PROJECT-STRUCTURE.md     # Directory layout & file organization
+│   ├── SCHEMA.md                # Vector database & payload schemas
+│   ├── SETUP.md                 # Local setup & step-by-step developer guide
+│   └── UI-WIREFRAMES.md         # Component layouts & screen flows
+├── backend/                     # FastAPI backend service
+│   ├── main.py                  # API endpoints (/health, /api/ingest, /api/search)
+│   ├── Procfile                 # Production process runner definition
+│   ├── render.yaml              # Render deployment configuration
+│   ├── requirements.txt         # Python dependencies
+│   ├── test_chunker.py          # Chunker test suite
+│   ├── test_vector_db.py        # Vector database test suite
 │   ├── services/
-│   │   ├── github_service.py    # GitHub REST Ingestion Service
-│   │   ├── chunker.py           # AST Code Splitter Engine
-│   │   └── vector_db.py         # Chroma Vector DB & Search Service
-│   └── chroma_db/               # Persistent Vector Storage
-└── frontend/
-    ├── index.html
-    ├── vercel.json              # Vercel SPA Routing Configuration
-    ├── package.json
+│   │   ├── github_service.py    # GitHub REST API fetcher
+│   │   ├── chunker.py           # AST code splitter
+│   │   └── vector_db.py         # ChromaDB storage & search service
+│   └── chroma_db/               # Local persistent vector database
+└── frontend/                    # Vite + React + Tailwind CSS frontend
+    ├── index.html               # Entry HTML
+    ├── vercel.json              # Vercel deployment rewrite rules
+    ├── package.json             # Frontend dependencies
     └── src/
-        ├── App.jsx              # React Interface Component
-        └── index.css            # Styling Setup
+        ├── App.jsx              # React interface component
+        ├── main.jsx             # React DOM root render
+        └── index.css            # Tailwind styling setup
 ```
 
 ---
 
-## 🧪 Quick Start (Local Development)
+## 🧪 Quick Start Guide
 
-### Backend:
-```bash
+### 1. Start Backend Server:
+```powershell
 cd codecompass/backend
-python -m venv venv
-# Windows:
 .\venv\Scripts\activate
 pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
+- Server endpoint: `http://localhost:8000`
+- Interactive API Docs: `http://localhost:8000/docs`
 
-### Frontend:
-```bash
+### 2. Start Frontend App:
+```powershell
 cd codecompass/frontend
 npm install
 npm run dev
 ```
+- Web Application: `http://localhost:5173`
+
+---
+
+## 🌐 Deploy to Cloud (Free Tier)
+
+- **Backend (Render):** Deploy using `backend/render.yaml` or connect your repo to Render Web Service pointing to root directory `backend`.
+- **Frontend (Vercel):** Import repository in Vercel, set root directory to `frontend`, and click **Deploy**.

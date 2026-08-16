@@ -1,41 +1,53 @@
 # Project Structure: CodeCompass
 
-We are utilizing a monorepo approach where both the frontend and backend exist in the same repository. This simplifies version control and makes it easier to track full-stack features.
+CodeCompass is organized as a monorepo containing the `frontend` (React + Vite) and `backend` (FastAPI) applications.
+
+---
 
 ```text
 codecompass/
-├── docs/                   # Architectural blueprints, schemas, and API docs
+├── docs/                        # Complete architecture & API documentation suite
+│   ├── API.md                   # REST API specifications (/health, /api/ingest, /api/search)
+│   ├── ARCHITECTURE.md          # System design & data flow diagrams
+│   ├── ENVIRONMENT.md           # Environment variable configurations
+│   ├── PROJECT-STRUCTURE.md     # Workspace layout & directory specifications
+│   ├── SCHEMA.md                # Vector store schemas & payload definitions
+│   ├── SETUP.md                 # Local setup & developer guides
+│   └── UI-WIREFRAMES.md         # Dashboard layouts & component flows
 │
-├── frontend/               # React + Vite application
-│   ├── public/             # Static assets (favicons, etc.)
-│   ├── src/
-│   │   ├── components/     # Reusable UI components (FileTree, ChatBox, LoadingState)
-│   │   ├── hooks/          # Custom React hooks (e.g., useChatStream, useIngest)
-│   │   ├── services/       # API call wrappers (axios/fetch logic)
-│   │   ├── App.jsx         # Main layout and routing
-│   │   └── main.jsx        # React DOM entry point
-│   ├── tailwind.config.js  # Tailwind CSS configuration
-│   └── package.json        # Frontend dependencies
+├── frontend/                    # Vite + React + Tailwind CSS web application
+│   ├── index.html               # Main HTML template
+│   ├── vercel.json              # Vercel deployment SPA rewrite configuration
+│   ├── package.json             # NPM dependencies & scripts
+│   └── src/
+│       ├── App.css              # Custom styling
+│       ├── App.jsx              # Core application UI component
+│       ├── index.css            # Tailwind directives
+│       └── main.jsx             # React DOM entry point
 │
-├── backend/                # FastAPI application
-│   ├── app/
-│   │   ├── api/            # Route handlers (routes/chat.py, routes/ingest.py)
-│   │   ├── core/           # Configuration, security, and environment variables
-│   │   ├── models/         # Pydantic schemas for request/response validation
-│   │   ├── services/       # Core business logic
-│   │   │   ├── github.py   # GitHub REST API interaction
-│   │   │   ├── chunker.py  # Code parsing and chunking logic
-│   │   │   ├── vector.py   # Pinecone database interactions
-│   │   │   └── llm.py      # OpenAI prompt construction and generation
-│   │   └── main.py         # FastAPI application factory and middleware setup
-│   ├── requirements.txt    # Python dependencies
-│   └── .env.example        # Template for required environment variables
+├── backend/                     # Python FastAPI service
+│   ├── main.py                  # FastAPI application entry point & CORS configuration
+│   ├── Procfile                 # Process runner for cloud web hosting
+│   ├── render.yaml              # Render cloud infrastructure specification
+│   ├── requirements.txt         # Python package dependencies
+│   ├── test_chunker.py          # Chunker unit test suite
+│   ├── test_vector_db.py        # Vector database unit test suite
+│   ├── services/
+│   │   ├── github_service.py    # GitHub REST API file fetching & filtering
+│   │   ├── chunker.py           # AST-aware code splitting engine
+│   │   └── vector_db.py         # ChromaDB vector store & search service
+│   └── chroma_db/               # Local persistent Chroma vector database
 │
-├── .gitignore              # Standard ignores (node_modules, venv, .env)
-└── README.md               # Project overview and local setup instructions
+├── .gitignore                   # Workspace git ignore patterns
+└── README.md                    # Root project overview & 10-day roadmap
 ```
 
-## Rationale
-- **Separation of Concerns:** The `backend/app/services` directory isolates business logic from the API routing layer (`api/`). This makes the code easier to test.
-- **Scalability:** If we need to swap out Pinecone for Supabase later, we only need to touch `services/vector.py`.
-- **Deployment:** Vercel can be configured to point its root directory to `frontend/`, while Render can point its root directory to `backend/`.
+---
+
+## Component Responsibilities
+
+1. **`backend/services/github_service.py`:** Handles GitHub URL parsing, recursive tree fetching, and target source file filtering.
+2. **`backend/services/chunker.py`:** Parses source code into AST-aware chunks with structural metadata using LangChain splitters.
+3. **`backend/services/vector_db.py`:** Manages persistent ChromaDB vector storage and semantic search operations.
+4. **`backend/main.py`:** Exposes CORS-enabled FastAPI endpoints for `/health`, `/api/ingest`, and `/api/search`.
+5. **`frontend/src/App.jsx`:** React interface displaying backend connection status and repository tools.

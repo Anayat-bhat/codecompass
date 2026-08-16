@@ -1,16 +1,56 @@
-# React + Vite
+# CodeCompass Frontend 💻
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+> React + Vite + Tailwind CSS User Interface for CodeCompass
 
-Currently, two official plugins are available:
+This folder contains the Single Page Application (SPA) frontend for CodeCompass.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## 🛠 Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Framework:** React 18 (via Vite)
+- **Styling:** Tailwind CSS (Vanilla CSS utilities)
+- **HTTP Client:** Fetch API with CORS integration
+- **Deployment:** Vercel (via `vercel.json`)
 
-## Expanding the Oxlint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## 🚀 Getting Started
+
+### 1. Install Dependencies
+```bash
+npm install
+```
+
+### 2. Run Development Server
+```bash
+npm run dev
+```
+The application will launch on `http://localhost:5173`.
+
+### 3. Build for Production
+```bash
+npm run build
+```
+Builds static assets into the `dist/` directory ready for deployment.
+
+---
+
+## 🌐 Production Deployment (Vercel)
+
+The frontend is configured with `vercel.json` for single-page routing:
+```json
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
+```
+
+To deploy:
+1. Connect your repository to [Vercel](https://vercel.com).
+2. Set the **Root Directory** to `frontend`.
+3. Click **Deploy**.
