@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -7,6 +8,7 @@ from dotenv import load_dotenv
 from services.github_service import fetch_repository_files, parse_github_url
 from services.chunker import chunk_repository_documents
 from services.vector_db import store_chunks_in_vector_db, query_vector_db
+from services.rag_service import generate_rag_response
 
 # Load environment variables from .env file
 load_dotenv()
@@ -36,6 +38,11 @@ class IngestRequest(BaseModel):
 class SearchRequest(BaseModel):
     query: str = Field(..., description="Search query string")
     top_k: int = Field(default=5, description="Number of vector results to return")
+
+class ChatRequest(BaseModel):
+    query: str = Field(..., description="User question or query about the ingested codebase")
+    top_k: int = Field(default=5, description="Number of code chunks to retrieve as context")
+    repo_url: Optional[str] = Field(default=None, description="Optional GitHub repo URL context")
 
 @app.get("/health", status_code=status.HTTP_200_OK)
 def health_check():
@@ -109,4 +116,19 @@ def search_code_chunks(request: SearchRequest):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Vector search failed: {str(e)}"
+        )
+
+@app.post("/api/chat", status_code=status.HTTP_200_OK)
+def chat_with_codebase(request: ChatRequest):
+    """
+    RAG Chat endpoint: Accepts a query, retrieves top code chunks from ChromaDB,
+    and returns a code-grounded answer with file citations.
+    """
+    try:
+        response = generate_rag_response(query=request.query, top_k=request.top_k)
+        return response
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"RAG chat failed: {str(e)}"
         )
