@@ -13,6 +13,7 @@ graph TD
     GitHub[GitHub REST API]
     VectorDB[(ChromaDB Vector Store)]
     Embedder[ONNX Local Embeddings]
+    LLM[RAG Intelligence Engine]
 
     Client -->|1. Submit Repo URL| Backend
     Backend -->|2. Fetch Tree & Raw Code| GitHub
@@ -21,19 +22,21 @@ graph TD
     Embedder -->|5. Store Chunks & Metadata| VectorDB
     Backend -->|6. Return Tree & File Count| Client
 
-    Client -->|7. Send Search Query| Backend
+    Client -->|7. Ask Codebase Question| Backend
     Backend -->|8. Query Vector Similarity| VectorDB
-    VectorDB -->|9. Return Top-K Snippets| Backend
-    Backend -->|10. Return Search JSON| Client
+    VectorDB -->|9. Return Top-K Chunks| Backend
+    Backend -->|10. Synthesize Answer & Citations| LLM
+    LLM -->|11. Return Answer & Sources JSON| Client
 ```
 
 ---
 
 ## 2. Component Design
 
-### A. Frontend Layer (React + Vite)
-- User interface providing URL entry, repository tree navigation, and chat interactions.
-- Communicates with FastAPI via HTTP REST calls (`/health`, `/api/ingest`, `/api/search`).
+### A. Frontend Layer (React + Vite + Tailwind CSS)
+- User interface providing URL entry, repository stats, interactive collapsible **FileTree** component, and **Chat** window with source citation cards.
+- Displays the mandatory challenge footer: *"Built with Claude as part of the AB Talks 60-Day Claude AI Challenge."*
+- Communicates with FastAPI via HTTP REST calls (`/health`, `/api/ingest`, `/api/search`, `/api/chat`).
 
 ### B. Ingestion Engine (`github_service.py`)
 - Validates public GitHub URLs.
@@ -48,6 +51,11 @@ graph TD
 - Uses persistent **ChromaDB** located at `backend/chroma_db`.
 - Default embedding execution uses a local ONNX model (`all-MiniLM-L6-v2`), running 100% free with zero API key dependencies.
 - Optional fallback to OpenAI `text-embedding-3-small` if `OPENAI_API_KEY` is specified.
+
+### E. RAG Intelligence Engine (`rag_service.py`)
+- Queries ChromaDB for top matching code chunks for user questions.
+- Synthesizes code-grounded explanations citing exact file paths.
+- Supports Gemini API (`GEMINI_API_KEY`), OpenAI API (`OPENAI_API_KEY`), or zero-cost local fallback synthesis.
 
 ---
 

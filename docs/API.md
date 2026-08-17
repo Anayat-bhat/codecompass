@@ -92,7 +92,33 @@ This document details the REST API endpoints exposed by the FastAPI backend serv
 
 ---
 
-## 4. Chat Endpoint (Scheduled for Day 6)
-**Purpose:** Handles natural language RAG retrieval and streams grounded AI responses with exact file citations.
+## 4. RAG Chat Endpoint
+**Purpose:** Handles natural language codebase questions by retrieving top matching code chunks from ChromaDB and returning code-grounded explanations with source citations.
 - **Endpoint:** `POST /api/chat`
-- **Payload:** `{ "query": "string", "session_id": "string" }`
+- **Headers:** `Content-Type: application/json`
+- **Request Body:**
+  ```json
+  {
+    "query": "Where is the authentication logic implemented?",
+    "top_k": 5,
+    "repo_url": "https://github.com/fastapi/fastapi"
+  }
+  ```
+- **Response (200 OK):**
+  ```json
+  {
+    "status": "success",
+    "query": "Where is the authentication logic implemented?",
+    "answer": "Based on semantic code search in the ingested repository, authentication logic is implemented in `fastapi/security/oauth2.py`...",
+    "sources": [
+      {
+        "file_path": "fastapi/security/oauth2.py",
+        "language": "python",
+        "chunk_index": 0,
+        "snippet": "class OAuth2PasswordBearer(SecurityBase):\n    def __init__(self, tokenUrl: str)..."
+      }
+    ],
+    "chunks_retrieved": 5
+  }
+  ```
+
