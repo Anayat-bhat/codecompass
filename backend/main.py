@@ -9,6 +9,7 @@ from services.github_service import fetch_repository_files, parse_github_url
 from services.chunker import chunk_repository_documents
 from services.vector_db import store_chunks_in_vector_db, query_vector_db
 from services.rag_service import generate_rag_response
+from services.onboarding_service import generate_onboarding_brief
 
 # Load environment variables from .env file
 load_dotenv()
@@ -132,3 +133,30 @@ def chat_with_codebase(request: ChatRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"RAG chat failed: {str(e)}"
         )
+
+class OnboardRequest(BaseModel):
+    repo_url: str = Field(..., description="Public GitHub repository URL")
+
+@app.post("/api/onboard", status_code=status.HTTP_200_OK)
+def generate_repository_onboard_brief(request: OnboardRequest):
+    """
+    Generates an auto-generated Repository Onboarding Brief:
+    1. Parses repository URL.
+    2. Fetches files and computes tech stack breakdown.
+    3. Retrieves top vector chunks.
+    4. Synthesizes a structured onboarding guide with entry points and suggested questions.
+    """
+    try:
+        owner, repo = parse_github_url(request.repo_url)
+        documents = fetch_repository_files(request.repo_url, max_files=150)
+        file_tree = [{"path": doc["path"], "language": doc["language"]} for doc in documents]
+        chunks = query_vector_db(query_text="architecture main entry point overview", n_results=5)
+
+        brief = generate_onboarding_brief(owner, repo, file_tree, chunks)
+        return brief
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Onboarding brief generation failed: {str(e)}"
+        )
+

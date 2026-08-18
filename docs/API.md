@@ -121,4 +121,37 @@ This document details the REST API endpoints exposed by the FastAPI backend serv
     "chunks_retrieved": 5
   }
   ```
+---
 
+## 5. Auto-Generated Repository Onboarding Brief
+**Purpose:** Analyzes repository file hierarchy, AST code chunks, entry points, and dependency trees to auto-generate a structured Developer Onboarding Brief.
+- **Endpoint:** `POST /api/onboard`
+- **Headers:** `Content-Type: application/json`
+- **Request Body:**
+  ```json
+  {
+    "repo_url": "https://github.com/fastapi/fastapi"
+  }
+  ```
+- **Response (200 OK):**
+  ```json
+  {
+    "status": "success",
+    "owner": "fastapi",
+    "repo": "fastapi",
+    "analysis": {
+      "languages": [
+        { "language": "python", "count": 42, "percentage": 93.3 }
+      ],
+      "entry_points": ["fastapi/applications.py"],
+      "config_files": ["pyproject.toml"],
+      "key_directories": ["fastapi", "docs", "tests"],
+      "total_files": 45
+    },
+    "onboarding_brief": "# 🧭 Repository Onboarding Brief: fastapi/fastapi\n...",
+    "suggested_questions": [
+      "What is the main entry point and how does execution start?",
+      "How are environment variables and configurations managed?"
+    ]
+  }
+  ```
