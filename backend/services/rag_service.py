@@ -144,3 +144,75 @@ def generate_rag_response(query: str, top_k: int = 5, collection_name: str = "co
         "sources": sources,
         "chunks_retrieved": len(chunks)
     }
+
+async def generate_rag_stream(query: str, top_k: int = 5, collection_name: str = "codecompass_chunks"):
+    """
+    Async generator yielding Server-Sent Event (SSE) chunks for real-time response streaming.
+    Format per chunk: 'data: {"type": "content|sources|done", "payload": ...}\n\n'
+    """
+    import json
+    import asyncio
+
+    # Step 1: Query ChromaDB for top matching context chunks
+    chunks = query_vector_db(query_text=query, n_results=top_k, collection_name=collection_name)
+    sources = extract_sources(chunks)
+    context_text = format_context(chunks)
+
+    # First send retrieved citations payload
+    yield f"data: {json.dumps({'type': 'sources', 'sources': sources})}\n\n"
+    await asyncio.sleep(0.01)
+
+    openai_key = os.getenv("OPENAI_API_KEY", "").strip()
+    gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
+
+    system_prompt = (
+        "You are CodeCompass, an expert code-aware AI assistant. "
+        "Answer the user's question accurately using ONLY the provided code snippets from the ingested GitHub repository. "
+        "Always cite specific file paths when referencing code logic. "
+        "If the answer cannot be determined from the code context, state that clearly."
+    )
+
+    user_prompt = (
+        f"User Question: {query}\n\n"
+        f"Retrieved Codebase Context:\n{context_text}\n\n"
+        f"Provide a clear, helpful response explaining how the codebase handles this question with file citations."
+    )
+
+    streamed_success = False
+
+    # Try OpenAI streaming if key present
+    if openai_key and openai_key != "your_openai_api_key_here":
+        try:
+            client = openai.OpenAI(api_key=openai_key)
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                temperature=0.2,
+                max_tokens=800,
+                stream=True
+            )
+            for chunk in response:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    text_delta = chunk.choices[0].delta.content
+                    yield f"data: {json.dumps({'type': 'token', 'token': text_delta})}\n\n"
+                    await asyncio.sleep(0.005)
+            streamed_success = True
+        except Exception as e:
+            print(f"[RAG Stream Warning] OpenAI streaming failed: {e}")
+
+    # Fallback to Local/Synthesizer Stream if OpenAI was not used or failed
+    if not streamed_success:
+        full_answer = synthesize_fallback_response(query, chunks)
+        # Stream character/word tokens smoothly
+        words = full_answer.split(" ")
+        for idx, word in enumerate(words):
+            token = word + (" " if idx < len(words) - 1 else "")
+            yield f"data: {json.dumps({'type': 'token', 'token': token})}\n\n"
+            await asyncio.sleep(0.015)
+
+    # Signal completion
+    yield f"data: {json.dumps({'type': 'done'})}\n\n"
+

@@ -38,57 +38,102 @@ export default function Chat({ repoIngested, repoInfo, backendUrl = 'http://loca
       sources: []
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const assistantMsgId = `assistant-${Date.now()}`;
+
+    setMessages((prev) => [
+      ...prev,
+      userMessage,
+      {
+        id: assistantMsgId,
+        sender: 'assistant',
+        text: '',
+        sources: [],
+        isStreaming: true
+      }
+    ]);
+
     setInputQuery('');
     setLoading(true);
 
     try {
-      const response = await fetch(`${backendUrl}/api/chat`, {
+      // Try streaming endpoint first
+      const response = await fetch(`${backendUrl}/api/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: textToSubmit, top_k: 5 })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Failed to process request' }));
-        throw new Error(errorData.detail || 'Server error');
+      if (!response.ok || !response.body) {
+        throw new Error('Streaming endpoint unavailable');
       }
 
-      const data = await response.json();
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
 
-      const aiMessage = {
-        id: `assistant-${Date.now()}`,
-        sender: 'assistant',
-        text: data.answer || 'No answer generated.',
-        sources: data.sources || []
-      };
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
 
-      setMessages((prev) => [...prev, aiMessage]);
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const jsonStr = line.replace(/^data:\s*/, '').trim();
+            if (!jsonStr) continue;
+            try {
+              const data = JSON.parse(jsonStr);
+              if (data.type === 'sources') {
+                setMessages((prev) =>
+                  prev.map((msg) => (msg.id === assistantMsgId ? { ...msg, sources: data.sources || [] } : msg))
+                );
+              } else if (data.type === 'token') {
+                setMessages((prev) =>
+                  prev.map((msg) => (msg.id === assistantMsgId ? { ...msg, text: msg.text + data.token } : msg))
+                );
+              } else if (data.type === 'done') {
+                setMessages((prev) =>
+                  prev.map((msg) => (msg.id === assistantMsgId ? { ...msg, isStreaming: false } : msg))
+                );
+              }
+            } catch (e) {
+              console.warn('Failed to parse SSE chunk:', e);
+            }
+          }
+        }
+      }
     } catch (err) {
-      console.warn('Chat API fallback to offline RAG synthesizer:', err);
+      console.warn('Chat SSE streaming fallback triggered:', err);
       // Smart Fallback answer with file citations for offline/demo mode
       const fallbackText = "Based on semantic code search in the ingested repository **fastapi/fastapi**, implementation details for **\"" + textToSubmit + "\"** were located across the codebase:\n\n📍 **Primary File:** `fastapi/applications.py` \n\n```python\nclass FastAPI(App):\n    def __init__(self, routes=None):\n        self.router = APIRouter()\n```";
 
-      const fallbackAiMessage = {
-        id: `assistant-${Date.now()}`,
-        sender: 'assistant',
-        text: fallbackText,
-        sources: [
-          {
-            file_path: 'fastapi/applications.py',
-            language: 'python',
-            chunk_index: 0,
-            snippet: 'class FastAPI(App):\n    def __init__(self, routes=None):\n        self.router = APIRouter()'
-          },
-          {
-            file_path: 'fastapi/routing.py',
-            language: 'python',
-            chunk_index: 1,
-            snippet: 'class APIRouter:\n    def add_api_route(self, path: str, endpoint: Callable): ...'
-          }
-        ]
-      };
-      setMessages((prev) => [...prev, fallbackAiMessage]);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === assistantMsgId
+            ? {
+                ...msg,
+                text: fallbackText,
+                isStreaming: false,
+                sources: [
+                  {
+                    file_path: 'fastapi/applications.py',
+                    language: 'python',
+                    chunk_index: 0,
+                    snippet: 'class FastAPI(App):\n    def __init__(self, routes=None):\n        self.router = APIRouter()'
+                  },
+                  {
+                    file_path: 'fastapi/routing.py',
+                    language: 'python',
+                    chunk_index: 1,
+                    snippet: 'class APIRouter:\n    def add_api_route(self, path: str, endpoint: Callable): ...'
+                  }
+                ]
+              }
+            : msg
+        )
+      );
     } finally {
       setLoading(false);
     }

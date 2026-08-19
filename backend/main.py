@@ -1,14 +1,15 @@
 import os
 from typing import Optional
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
 from services.github_service import fetch_repository_files, parse_github_url
 from services.chunker import chunk_repository_documents
 from services.vector_db import store_chunks_in_vector_db, query_vector_db
-from services.rag_service import generate_rag_response
+from services.rag_service import generate_rag_response, generate_rag_stream
 from services.onboarding_service import generate_onboarding_brief
 
 # Load environment variables from .env file
@@ -28,6 +29,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Middleware for Security Headers & Request Timing
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response: Response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    return response
 
 class IngestRequest(BaseModel):
     repo_url: str = Field(
@@ -134,6 +144,23 @@ def chat_with_codebase(request: ChatRequest):
             detail=f"RAG chat failed: {str(e)}"
         )
 
+@app.post("/api/chat/stream")
+async def chat_with_codebase_stream(request: ChatRequest):
+    """
+    RAG Streaming Chat Endpoint: Returns Server-Sent Events (SSE) stream
+    delivering real-time response tokens and citations.
+    """
+    try:
+        return StreamingResponse(
+            generate_rag_stream(query=request.query, top_k=request.top_k),
+            media_type="text/event-stream"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"RAG streaming chat failed: {str(e)}"
+        )
+
 class OnboardRequest(BaseModel):
     repo_url: str = Field(..., description="Public GitHub repository URL")
 
@@ -159,4 +186,5 @@ def generate_repository_onboard_brief(request: OnboardRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Onboarding brief generation failed: {str(e)}"
         )
+
 

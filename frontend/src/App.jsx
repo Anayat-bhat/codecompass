@@ -247,7 +247,7 @@ function App() {
               <div className="flex items-center gap-2">
                 <h1 className="text-lg font-black tracking-tight text-white">CodeCompass</h1>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-teal-400 font-mono">
-                  v1.0 Day 7
+                  v1.0 Day 8
                 </span>
               </div>
               <p className="text-xs text-slate-400 hidden sm:block">
@@ -502,9 +502,9 @@ function App() {
             Built with Claude as part of the AB Talks 60-Day Claude AI Challenge.
           </p>
           <div className="flex items-center gap-3 text-slate-500 font-mono text-[11px]">
-            <span>CodeCompass v1.0 Day 7</span>
+            <span>CodeCompass v1.0 Day 8</span>
             <span>•</span>
-            <span>ChromaDB RAG + Onboarding Brief</span>
+            <span>Streamed RAG + Onboarding Brief</span>
           </div>
         </div>
       </footer>
