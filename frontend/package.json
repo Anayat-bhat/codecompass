@@ -1,7 +1,10 @@
 {
-  "name": "frontend",
+  "name": "codecompass-frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Code-Aware RAG Intelligence & Repository Onboarding Assistant - Frontend UI",
+  "author": "AB Talks 60-Day AI Challenge",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",
