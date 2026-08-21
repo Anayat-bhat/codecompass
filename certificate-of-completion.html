@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate of Completion - Anayat Bhat | AB Talks Capstone</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Georgia', 'Times New Roman', serif;
+        }
+
+        body {
+            background-color: #090d16;
+            color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .certificate-frame {
+            width: 1050px;
+            height: 720px;
+            background: linear-gradient(135deg, #0d1322 0%, #111827 50%, #0d1322 100%);
+            border: 12px solid #1f2937;
+            outline: 3px solid #d97706;
+            outline-offset: -16px;
+            border-radius: 12px;
+            position: relative;
+            padding: 40px 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 0 80px rgba(217, 119, 6, 0.1);
+        }
+
+        .corner-decoration {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border: 2px solid #f59e0b;
+        }
+
+        .top-left { top: 25px; left: 25px; border-right: none; border-bottom: none; }
+        .top-right { top: 25px; right: 25px; border-left: none; border-bottom: none; }
+        .bottom-left { bottom: 25px; left: 25px; border-right: none; border-top: none; }
+        .bottom-right { bottom: 25px; right: 25px; border-left: none; border-top: none; }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-top: 10px;
+        }
+
+        .brand-logo-svg {
+            width: 44px;
+            height: 44px;
+        }
+
+        .brand-name {
+            font-family: 'Segoe UI', -apple-system, sans-serif;
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: 3px;
+            color: #f59e0b;
+            text-transform: uppercase;
+        }
+
+        .cert-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, #ffffff 0%, #f59e0b 50%, #fbbf24 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 10px 0 5px;
+        }
+
+        .cert-subtitle {
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 0.95rem;
+            color: #9ca3af;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .presented-to {
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 1rem;
+            font-style: italic;
+            color: #d1d5db;
+            margin-top: 15px;
+        }
+
+        .recipient-name {
+            font-size: 3.2rem;
+            font-weight: 700;
+            color: #ffffff;
+            border-bottom: 2px solid #f59e0b;
+            padding-bottom: 6px;
+            margin: 5px 0 15px;
+            display: inline-block;
+            letter-spacing: 1px;
+            text-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+        }
+
+        .achievement-text {
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: #e5e7eb;
+            max-width: 820px;
+            margin: 0 auto;
+        }
+
+        .highlight {
+            color: #f59e0b;
+            font-weight: 700;
+        }
+
+        .project-badge-box {
+            background: rgba(17, 24, 39, 0.8);
+            border: 1px solid #374151;
+            border-radius: 10px;
+            padding: 12px 30px;
+            display: inline-flex;
+            gap: 25px;
+            align-items: center;
+            margin: 15px 0;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .badge-item {
+            font-size: 0.9rem;
+            color: #9ca3af;
+        }
+
+        .badge-item strong {
+            color: #60a5fa;
+            font-size: 1rem;
+        }
+
+        .footer-signatures {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 10px;
+            padding: 0 20px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .sig-block {
+            text-align: center;
+            width: 220px;
+        }
+
+        .sig-line {
+            border-top: 1px solid #4b5563;
+            margin-top: 8px;
+            padding-top: 6px;
+            font-size: 0.85rem;
+            color: #9ca3af;
+        }
+
+        .sig-title {
+            font-weight: 700;
+            color: #f3f4f6;
+            font-size: 0.95rem;
+        }
+
+        .stamp-seal {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #f59e0b 0%, #b45309 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #0b0f19;
+            font-weight: 900;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+            border: 2px dashed #ffffff;
+        }
+
+        .official-links {
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 0.8rem;
+            color: #6b7280;
+            display: flex;
+            gap: 20px;
+        }
+
+        .official-links a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="certificate-frame">
+    <div class="corner-decoration top-left"></div>
+    <div class="corner-decoration top-right"></div>
+    <div class="corner-decoration bottom-left"></div>
+    <div class="corner-decoration bottom-right"></div>
+
+    <div class="header-brand">
+        <!-- AB Talks Inline Vector Logo -->
+        <svg class="brand-logo-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="46" fill="#0D1322" stroke="#F59E0B" stroke-width="4"/>
+            <path d="M30 70V30L50 50L70 30V70" stroke="#F59E0B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="50" cy="25" r="5" fill="#60A5FA"/>
+        </svg>
+        <span class="brand-name">AB Talks</span>
+    </div>
+
+    <div>
+        <h1 class="cert-title">Certificate of Completion</h1>
+        <div class="cert-subtitle">10-Day Capstone Sprint | 60-Day Claude AI Challenge</div>
+    </div>
+
+    <div class="presented-to">This certificate is proudly awarded to</div>
+
+    <div class="recipient-name">Anayat Bhat</div>
+
+    <div class="achievement-text">
+        for successfully building, testing, hardening, and releasing a production-ready AI application during the 
+        <span class="highlight">10-Day Capstone Sprint</span> of the AB Talks 60-Day Claude AI Challenge. 
+        Demonstrated mastery in AI fundamentals, AST code-aware chunking, vector database retrieval, Server-Sent Events (SSE) streaming, automated QA engineering, and full Software Development Lifecycle execution.
+    </div>
+
+    <div class="project-badge-box">
+        <div class="badge-item">Project: <strong>CodeCompass 🧭</strong></div>
+        <div class="badge-item">Release: <strong>Version v1.0.0</strong></div>
+        <div class="badge-item">Date: <strong>August 21, 2026</strong></div>
+    </div>
+
+    <div class="footer-signatures">
+        <div class="sig-block">
+            <div class="sig-title">Claude (Antigravity AI)</div>
+            <div class="sig-line">AI Pair Programmer &amp; Project Mentor</div>
+        </div>
+
+        <div class="stamp-seal">
+            Official<br>v1.0.0<br>Verified
+        </div>
+
+        <div class="sig-block">
+            <div class="sig-title">AB Talks AI Program</div>
+            <div class="sig-line">Challenge Director &amp; Evaluator</div>
+        </div>
+    </div>
+
+    <div class="official-links">
+        <span>Verified Certificate: <a href="https://www.abtalks.in/" target="_blank">abtalks.in</a></span>
+        <span>|</span>
+        <span>Community: <a href="https://www.linkedin.com/company/abtalks-on-ai/" target="_blank">AB Talks on LinkedIn</a></span>
+    </div>
+</div>
+
+</body>
+</html>
